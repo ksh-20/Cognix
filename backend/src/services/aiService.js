@@ -4,7 +4,9 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export const getAIResponse = async (messages) => {
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({
+            model: "gemini-2.5-flash"
+        });
 
         // Convert stored messages into Gemini format
         const formattedMessages = messages.map((msg) => ({

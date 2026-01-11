@@ -1,7 +1,7 @@
-import Chat from "../models/Chat";
-import Conversation from "../models/Conversation";
+import Chat from "../models/Chat.js";
+import Conversation from "../models/Conversation.js";
 
-import { getAIResponse } from "../services/aiService";
+import { getAIResponse } from '../services/aiService.js';
 
 export const getChats = async(req, res) => {
     try {

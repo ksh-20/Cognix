@@ -32,10 +32,10 @@ interface BackendChat {
 }
 
 const ChatWindow = () => {
-  /* -------------------- AUTH -------------------- */
+  /* AUTH */
   const { user } = useAuth();
 
-  /* -------------------- STATE -------------------- */
+  /* STATE */
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | undefined>();
@@ -46,7 +46,7 @@ const ChatWindow = () => {
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  /* -------------------- LOAD CHATS (BACKEND) -------------------- */
+  /* LOAD CHATS */
   useEffect(() => {
     if (!user) return;
 
@@ -75,7 +75,7 @@ const ChatWindow = () => {
   }, [user]);
 
 
-  /* -------------------- LOAD MESSAGES WHEN CHAT IS SELECTED -------------------- */
+  /* LOAD MESSAGES WHEN CHAT IS SELECTED */
   useEffect(() => {
     if (!activeConversationId) return;
 
@@ -99,7 +99,7 @@ const ChatWindow = () => {
   }, [activeConversationId]);
 
 
-  /* -------------------- LOCAL STORAGE CACHE -------------------- */
+  /* LOCAL STORAGE CACHE */
   useEffect(() => {
     localStorage.setItem("chats", JSON.stringify(conversations));
   }, [conversations]);
@@ -111,7 +111,7 @@ const ChatWindow = () => {
     }
   }, []);
 
-  /* -------------------- ACTIVE CONVERSATION -------------------- */
+  /* ACTIVE CONVERSATION */
   const activeConversation = conversations.find(
     (c) => c.id === activeConversationId
   );
@@ -130,7 +130,7 @@ const ChatWindow = () => {
       minute: "2-digit",
     });
 
-  /* -------------------- SEND MESSAGE -------------------- */
+  /* SEND MESSAGE */
   const handleSend = async () => {
     if (!input.trim()) return;
 
@@ -182,14 +182,14 @@ const ChatWindow = () => {
     }
   };
 
-  /* -------------------- NEW CHAT -------------------- */
+  /* NEW CHAT */
   const startNewChat = () => {
     setActiveConversationId(null);
     setConversationId(undefined);
     setInput("");
   };
 
-  /* -------------------- DELETE CHAT -------------------- */
+  /* DELETE CHAT */
   const handleDelete = async (id: string) => {
     await deleteChat(id);
 
@@ -201,12 +201,11 @@ const ChatWindow = () => {
     }
   };
 
-  /* -------------------- AUTH GUARD (SAFE) -------------------- */
+  /* AUTH GUARD */
   if (!user) {
     return <Login />;
   }
 
-  /* -------------------- UI -------------------- */
   return (
     <div className={dark ? "dark" : ""}>
       <div className="flex h-screen bg-gray-50 dark:bg-gray-900 text-black dark:text-white">

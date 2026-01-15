@@ -1,4 +1,4 @@
-# 🤖 Cognix – A personal AI Chatbot assistant
+# 🤖 Cognix – A Personal AI Chatbot Assistant
 
 Cognix is a **full-stack AI-powered conversational chatbot** with secure authentication, persistent conversations, and a modern chat UI.  
 It supports **multi-conversation chats, JWT-based authentication, and AI integration**.

@@ -7,6 +7,7 @@ import {
   fetchChats,
   renameChat,
   deleteChat,
+  fetchChatById
 } from "../services/chatService";
 import { useAuth } from "../context/AuthContext";
 import Login from "../pages/Login";
@@ -60,6 +61,11 @@ const ChatWindow = () => {
         }));
 
         setConversations(mapped);
+
+        if (mapped.length > 0) {
+          setActiveConversationId(mapped[0].id);
+          setConversationId(mapped[0].id);
+        }
       } catch {
         console.warn("Failed to load chats from backend");
       }
@@ -67,6 +73,31 @@ const ChatWindow = () => {
 
     loadChats();
   }, [user]);
+
+
+  /* -------------------- LOAD MESSAGES WHEN CHAT IS SELECTED -------------------- */
+  useEffect(() => {
+    if (!activeConversationId) return;
+
+    const loadMessages = async () => {
+      try {
+        const chat = await fetchChatById(activeConversationId);
+
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === activeConversationId
+              ? { ...c, messages: chat.messages }
+              : c
+          )
+        );
+      } catch (error) {
+        console.error("Failed to load messages", error);
+      }
+    };
+
+    loadMessages();
+  }, [activeConversationId]);
+
 
   /* -------------------- LOCAL STORAGE CACHE -------------------- */
   useEffect(() => {

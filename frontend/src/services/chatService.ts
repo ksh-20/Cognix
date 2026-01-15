@@ -1,11 +1,15 @@
 const BASE_URL = "http://localhost:5001/api/chats";
 
-const getAuthHeaders = () => {
+const getAuthHeaders = (): Record<string, string> => {
   const user = localStorage.getItem("user");
 
-  if (!user) return {};
+  if (!user) {
+    return {
+      "Content-Type": "application/json",
+    };
+  }
 
-  const token = JSON.parse(user).token;
+  const token: string = JSON.parse(user).token;
 
   return {
     Authorization: `Bearer ${token}`,
@@ -19,7 +23,19 @@ export const fetchChats = async () => {
   });
 
   if (!res.ok) {
-    throw new Error("Unauthorized");
+    throw new Error("Failed to fetch chats");
+  }
+
+  return res.json();
+};
+
+export const fetchChatById = async (id: string) => {
+  const res = await fetch(`${BASE_URL}/${id}`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch chat");
   }
 
   return res.json();
@@ -36,7 +52,7 @@ export const sendMessage = async (
   });
 
   if (!res.ok) {
-    throw new Error("Unauthorized");
+    throw new Error("Failed to send message");
   }
 
   return res.json();
@@ -50,7 +66,7 @@ export const renameChat = async (id: string, title: string) => {
   });
 
   if (!res.ok) {
-    throw new Error("Unauthorized");
+    throw new Error("Failed to rename chat");
   }
 
   return res.json();
@@ -63,6 +79,6 @@ export const deleteChat = async (id: string) => {
   });
 
   if (!res.ok) {
-    throw new Error("Unauthorized");
+    throw new Error("Failed to delete chat");
   }
 };

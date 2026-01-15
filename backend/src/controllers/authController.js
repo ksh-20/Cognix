@@ -10,14 +10,19 @@ const generateToken = (id) => {
 
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    let { name, email, password } = req.body;
 
-    if (!name || !email || !password)
+    if (!name || !email || !password) {
       return res.status(400).json({ message: "All fields required" });
+    }
 
-    const exists = await User.findOne({ email });
-    if (exists)
+    email = email.toLowerCase().trim();
+    password = password.trim();
+
+    const existing = await User.findOne({ email });
+    if (existing) {
       return res.status(400).json({ message: "User already exists" });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -27,36 +32,43 @@ export const registerUser = async (req, res) => {
       password: hashedPassword,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       _id: user._id,
       name: user.name,
       email: user.email,
       token: generateToken(user._id),
     });
-  } catch {
-    res.status(500).json({ message: "Registration failed" });
+  } catch (err) {
+    console.error("REGISTER ERROR:", err);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
 export const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+
+    email = email.toLowerCase().trim();
+    password = password.trim();
 
     const user = await User.findOne({ email });
-    if (!user)
+    if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
+    }
 
-    const match = await bcrypt.compare(password, user.password);
-    if (!match)
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
+    }
 
-    res.json({
+    return res.json({
       _id: user._id,
       name: user.name,
       email: user.email,
       token: generateToken(user._id),
     });
-  } catch {
-    res.status(500).json({ message: "Login failed" });
+  } catch (err) {
+    console.error("LOGIN ERROR:", err);
+    return res.status(500).json({ message: "Server error" });
   }
 };

@@ -74,46 +74,59 @@ export const deleteChat = async(req, res) => {
 // For AI Chats
 
 export const sendMessage = async (req, res) => {
-    try {
-        const { message, conversationId } = req.body;
+  try {
+    const { message, conversationId } = req.body;
 
-        if (!message || message.trim() === "") {
-            return res.status(400).json({ message: "Message is required" });
-        }
-
-        let conversation;
-        if (conversationId) {
-            conversation = await Conversation.find({ user: req.user._id });
-
-            if (!conversation) {
-                return res.status(404).json({ message: "Conversation not found" });
-            }
-        } else {
-            conversation = new Conversation({ messages: [] });
-        }
-
-        conversation.messages.push({
-            role: "user",
-            content: message
-        });
-
-        const aiReply = await getAIResponse(conversation.messages);
-
-        conversation.messages.push({
-            role: "assistant",
-            content: aiReply
-        });
-
-        await conversation.save();
-
-        res.status(200).json({
-            conversationId: conversation._id,
-            reply: aiReply
-        });
-    } catch (error) {
-        console.error("Error in sendMessage controller", error);
-        res.status(500).json({ message: "Internal Server Error" });
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authorized" });
     }
+
+    if (!message || !message.trim()) {
+      return res.status(400).json({ message: "Message is required" });
+    }
+
+    let conversation;
+
+    if (conversationId) {
+      conversation = await Conversation.findOne({
+        _id: conversationId,
+        user: req.user._id,
+      });
+
+      if (!conversation) {
+        return res.status(404).json({ message: "Conversation not found" });
+      }
+    } else {
+      conversation = new Conversation({
+        user: req.user._id,
+        title: "Untitled Chat",
+        messages: [],
+      });
+    }
+
+    conversation.messages.push({
+      role: "user",
+      content: message,
+    });
+
+    const aiReply = await getAIResponse(conversation.messages);
+    // const aiReply = "Test reply from AI";
+
+    conversation.messages.push({
+      role: "assistant",
+      content: aiReply,
+    });
+
+    await conversation.save();
+
+    return res.status(200).json({
+      conversationId: conversation._id,
+      reply: aiReply,
+    });
+  } catch (error) {
+    console.error("SEND MESSAGE ERROR:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
 };
 
 export const getConversation = async (req, res) => {

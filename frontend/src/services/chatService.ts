@@ -1,52 +1,68 @@
 const BASE_URL = "http://localhost:5001/api/chats";
-const API_URL = "http://localhost:5001/api/chats/message";
+
+const getAuthHeaders = () => {
+  const user = localStorage.getItem("user");
+
+  if (!user) return {};
+
+  const token = JSON.parse(user).token;
+
+  return {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
+};
 
 export const fetchChats = async () => {
-  const res = await fetch(BASE_URL);
-  if (!res.ok) throw new Error("Failed to fetch chats");
+  const res = await fetch(BASE_URL, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error("Unauthorized");
+  }
+
+  return res.json();
+};
+
+export const sendMessage = async (
+  message: string,
+  conversationId?: string
+) => {
+  const res = await fetch(`${BASE_URL}/message`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ message, conversationId }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Unauthorized");
+  }
+
   return res.json();
 };
 
 export const renameChat = async (id: string, title: string) => {
   const res = await fetch(`${BASE_URL}/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ title }),
   });
-  if (!res.ok) throw new Error("Rename failed");
+
+  if (!res.ok) {
+    throw new Error("Unauthorized");
+  }
+
   return res.json();
 };
 
 export const deleteChat = async (id: string) => {
   const res = await fetch(`${BASE_URL}/${id}`, {
     method: "DELETE",
-  });
-  if (!res.ok) throw new Error("Delete failed");
-};
-
-export interface ChatResponse {
-  conversationId: string;
-  reply: string;
-}
-
-export const sendMessage = async (
-  message: string,
-  conversationId?: string
-): Promise<ChatResponse> => {
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      message,
-      conversationId,
-    }),
+    headers: getAuthHeaders(),
   });
 
   if (!res.ok) {
-    throw new Error("Failed to send message");
+    throw new Error("Unauthorized");
   }
-
-  return res.json();
 };

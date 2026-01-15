@@ -10,7 +10,8 @@ const InputBox = ({ value, onChange, onSend, disabled }: InputBoxProps) => {
     <div className="flex gap-2">
       <input
         type="text"
-        className="flex-1 border rounded px-3 py-2 focus:outline-none"
+        onKeyDown={(e) => e.key === "Enter" && onSend()}
+        className="flex-1 border rounded-full px-4 py-2 focus:outline-none"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Type your message..."
@@ -19,7 +20,7 @@ const InputBox = ({ value, onChange, onSend, disabled }: InputBoxProps) => {
       <button
         onClick={onSend}
         disabled={disabled}
-        className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+        className="bg-blue-600 text-white px-5 py-2 rounded-full disabled:opacity-50"
       >
         Send
       </button>

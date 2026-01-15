@@ -1,25 +1,34 @@
 import mongoose from "mongoose";
 
 const messageSchema = new mongoose.Schema(
-    {
-        role: {
-            type: String,
-            enum: ["user", "assistant"],
-            required: true
-        },
-        content: {
-            type: String,
-            required: true
-        }
+  {
+    role: {
+      type: String,
+      enum: ["user", "assistant"],
+      required: true,
     },
-    { timestamps: true }
+    content: {
+      type: String,
+      required: true,
+    },
+  },
+  { timestamps: true }
 );
 
 const conversationSchema = new mongoose.Schema(
-    {
-        messages: [messageSchema]
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
-    { timestamps: true }
+    title: {
+      type: String,
+      default: "Untitled Chat",
+    },
+    messages: [messageSchema],
+  },
+  { timestamps: true }
 );
 
 const Conversation = mongoose.model("Conversation", conversationSchema);

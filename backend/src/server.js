@@ -5,6 +5,7 @@ import cors from 'cors';
 
 import { connectDB } from './config/db.js';
 
+import authRoutes from "./routes/authRoutes.js";
 import chatRoutes from './routes/chatRoutes.js';
 
 const app = express();
@@ -19,6 +20,7 @@ app.get("/", (req, res) => {
     res.send("API Endpoint");
 });
 
+app.use("/api/auth", authRoutes);
 app.use("/api/chats", chatRoutes);
 
 app.listen(PORT, () => {

@@ -8,6 +8,9 @@ import {
   renameChat,
   deleteChat,
 } from "../services/chatService";
+import { useAuth } from "../context/AuthContext";
+import Login from "../pages/Login";
+import UserMenu from "./UserMenu";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -27,8 +30,11 @@ interface BackendChat {
   messages?: ChatMessage[];
 }
 
-
 const ChatWindow = () => {
+  /* -------------------- AUTH -------------------- */
+  const { user } = useAuth();
+
+  /* -------------------- STATE -------------------- */
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | undefined>();
@@ -41,14 +47,18 @@ const ChatWindow = () => {
 
   /* -------------------- LOAD CHATS (BACKEND) -------------------- */
   useEffect(() => {
+    if (!user) return;
+
     const loadChats = async () => {
       try {
         const data = await fetchChats();
+
         const mapped = (data as BackendChat[]).map((c) => ({
           id: c._id,
           title: c.title || "Untitled Chat",
           messages: c.messages || [],
         }));
+
         setConversations(mapped);
       } catch {
         console.warn("Failed to load chats from backend");
@@ -56,7 +66,7 @@ const ChatWindow = () => {
     };
 
     loadChats();
-  }, []);
+  }, [user]);
 
   /* -------------------- LOCAL STORAGE CACHE -------------------- */
   useEffect(() => {
@@ -160,10 +170,16 @@ const ChatWindow = () => {
     }
   };
 
+  /* -------------------- AUTH GUARD (SAFE) -------------------- */
+  if (!user) {
+    return <Login />;
+  }
+
+  /* -------------------- UI -------------------- */
   return (
     <div className={dark ? "dark" : ""}>
       <div className="flex h-screen bg-gray-50 dark:bg-gray-900 text-black dark:text-white">
-        {/* -------------------- SIDEBAR -------------------- */}
+        {/* SIDEBAR */}
         <div className="w-64 border-r dark:border-gray-700 bg-gray-100 dark:bg-gray-800 p-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="font-semibold">Chats</h2>
@@ -236,20 +252,16 @@ const ChatWindow = () => {
           </div>
         </div>
 
-        {/* -------------------- CHAT AREA -------------------- */}
+        {/* CHAT AREA */}
         <div className="flex flex-col flex-1">
-          <header className="p-4 border-b dark:border-gray-700 text-center font-semibold">
-            Gemini Chatbot
+          <header className="p-4 border-b dark:border-gray-700 flex justify-between items-center">
+            <span className="font-semibold">Cognix</span>
+            <UserMenu />
           </header>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {messages.map((m, i) => (
-              <Message
-                key={i}
-                role={m.role}
-                content={m.content}
-                time={m.time}
-              />
+              <Message key={i} role={m.role} content={m.content} time={m.time} />
             ))}
 
             {loading && <TypingIndicator />}

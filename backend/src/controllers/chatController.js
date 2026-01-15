@@ -1,4 +1,3 @@
-import Chat from "../models/Chat.js";
 import Conversation from "../models/Conversation.js";
 
 import { getAIResponse } from '../services/aiService.js';
@@ -84,7 +83,7 @@ export const sendMessage = async (req, res) => {
 
         let conversation;
         if (conversationId) {
-            conversation = await Conversation.findById(conversationId);
+            conversation = await Conversation.find({ user: req.user._id });
 
             if (!conversation) {
                 return res.status(404).json({ message: "Conversation not found" });
@@ -119,7 +118,7 @@ export const sendMessage = async (req, res) => {
 
 export const getConversation = async (req, res) => {
     try {
-        const conversation = await Conversation.findById(req.params.conversationId);
+        const conversation = await Conversation.find({ user: req.user._id });
 
         if (!conversation) {
             return res.status(404).json({ message: "Conversation not found" });

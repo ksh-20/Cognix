@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:5000/api/chats/message";
+const API_URL = "http://localhost:5001/api/chats/message";
 
 export interface ChatResponse {
   conversationId: string;

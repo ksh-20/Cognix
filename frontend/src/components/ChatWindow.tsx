@@ -1,88 +1,272 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Message from "./Message";
 import InputBox from "./InputBox";
-import { sendMessage } from "../services/chatService";
-import { useEffect, useRef } from "react";
+import TypingIndicator from "./TypingIndicator";
+import {
+  sendMessage,
+  fetchChats,
+  renameChat,
+  deleteChat,
+} from "../services/chatService";
 
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  time: string;
 }
 
+interface Conversation {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+}
+
+interface BackendChat {
+  _id: string;
+  title?: string;
+  messages?: ChatMessage[];
+}
+
+
 const ChatWindow = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState("");
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | undefined>();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [dark, setDark] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  /* -------------------- LOAD CHATS (BACKEND) -------------------- */
+  useEffect(() => {
+    const loadChats = async () => {
+      try {
+        const data = await fetchChats();
+        const mapped = (data as BackendChat[]).map((c) => ({
+          id: c._id,
+          title: c.title || "Untitled Chat",
+          messages: c.messages || [],
+        }));
+        setConversations(mapped);
+      } catch {
+        console.warn("Failed to load chats from backend");
+      }
+    };
+
+    loadChats();
+  }, []);
+
+  /* -------------------- LOCAL STORAGE CACHE -------------------- */
+  useEffect(() => {
+    localStorage.setItem("chats", JSON.stringify(conversations));
+  }, [conversations]);
+
+  useEffect(() => {
+    const cached = localStorage.getItem("chats");
+    if (cached) {
+      setConversations(JSON.parse(cached));
+    }
+  }, []);
+
+  /* -------------------- ACTIVE CONVERSATION -------------------- */
+  const activeConversation = conversations.find(
+    (c) => c.id === activeConversationId
+  );
+
+  const messages = useMemo(() => {
+    return activeConversation?.messages ?? [];
+  }, [activeConversation]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
+  const getTime = () =>
+    new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
+  /* -------------------- SEND MESSAGE -------------------- */
   const handleSend = async () => {
     if (!input.trim()) return;
 
     const userMessage: ChatMessage = {
       role: "user",
       content: input,
+      time: getTime(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);
 
     try {
       const res = await sendMessage(input, conversationId);
 
-      setConversationId(res.conversationId);
+      const aiMessage: ChatMessage = {
+        role: "assistant",
+        content: res.reply,
+        time: getTime(),
+      };
 
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: res.reply },
-      ]);
-    } catch (error) {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: "Something went wrong." },
-      ]);
-      console.log(error);
+      setConversationId(res.conversationId);
+      setActiveConversationId(res.conversationId);
+
+      setConversations((prev) => {
+        const existing = prev.find((c) => c.id === res.conversationId);
+
+        if (existing) {
+          return prev.map((c) =>
+            c.id === res.conversationId
+              ? { ...c, messages: [...c.messages, userMessage, aiMessage] }
+              : c
+          );
+        }
+
+        return [
+          ...prev,
+          {
+            id: res.conversationId,
+            title: "Untitled Chat",
+            messages: [userMessage, aiMessage],
+          },
+        ];
+      });
+    } catch {
+      console.error("Message send failed");
     } finally {
       setLoading(false);
     }
   };
 
+  /* -------------------- NEW CHAT -------------------- */
+  const startNewChat = () => {
+    setActiveConversationId(null);
+    setConversationId(undefined);
+    setInput("");
+  };
+
+  /* -------------------- DELETE CHAT -------------------- */
+  const handleDelete = async (id: string) => {
+    await deleteChat(id);
+
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+
+    if (activeConversationId === id) {
+      setActiveConversationId(null);
+      setConversationId(undefined);
+    }
+  };
+
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-    <header className="p-4 border-b bg-white text-center font-semibold">
-      Cognix
-    </header>
+    <div className={dark ? "dark" : ""}>
+      <div className="flex h-screen bg-gray-50 dark:bg-gray-900 text-black dark:text-white">
+        {/* -------------------- SIDEBAR -------------------- */}
+        <div className="w-64 border-r dark:border-gray-700 bg-gray-100 dark:bg-gray-800 p-4">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="font-semibold">Chats</h2>
+            <button
+              onClick={() => setDark(!dark)}
+              className="text-xs border rounded px-2 py-1"
+            >
+              {dark ? "Light" : "Dark"}
+            </button>
+          </div>
 
-    <div className="flex-1 overflow-y-auto p-4 space-y-3">
-      {messages.map((msg, idx) => (
-        <Message key={idx} role={msg.role} content={msg.content} />
-      ))}
+          <button
+            onClick={startNewChat}
+            className="w-full mb-4 bg-blue-600 text-white rounded px-3 py-2 text-sm"
+          >
+            + New Chat
+          </button>
 
-      {loading && (
-        <div className="text-sm text-gray-500 italic">
-          AI is typing...
+          <div className="space-y-2">
+            {conversations.map((c) => (
+              <div
+                key={c.id}
+                className={`p-2 rounded text-sm cursor-pointer flex justify-between items-center
+                  ${
+                    c.id === activeConversationId
+                      ? "bg-blue-600 text-white"
+                      : "hover:bg-gray-200 dark:hover:bg-gray-700"
+                  }
+                `}
+              >
+                {editingId === c.id ? (
+                  <input
+                    className="w-full text-sm px-1 rounded text-black"
+                    defaultValue={c.title}
+                    autoFocus
+                    onBlur={async (e) => {
+                      const updated = await renameChat(c.id, e.target.value);
+                      setEditingId(null);
+
+                      setConversations((prev) =>
+                        prev.map((chat) =>
+                          chat.id === c.id
+                            ? { ...chat, title: updated.title }
+                            : chat
+                        )
+                      );
+                    }}
+                  />
+                ) : (
+                  <div
+                    className="flex-1 truncate"
+                    onClick={() => {
+                      setActiveConversationId(c.id);
+                      setConversationId(c.id);
+                    }}
+                    onDoubleClick={() => setEditingId(c.id)}
+                  >
+                    {c.title}
+                  </div>
+                )}
+
+                <button
+                  onClick={() => handleDelete(c.id)}
+                  className="text-red-400 ml-2 text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
-      )}
 
-      <div ref={bottomRef} />
-    </div>
+        {/* -------------------- CHAT AREA -------------------- */}
+        <div className="flex flex-col flex-1">
+          <header className="p-4 border-b dark:border-gray-700 text-center font-semibold">
+            Gemini Chatbot
+          </header>
 
-    <div className="p-4 border-t bg-white">
-      <InputBox
-        value={input}
-        onChange={setInput}
-        onSend={handleSend}
-        disabled={loading}
-      />
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {messages.map((m, i) => (
+              <Message
+                key={i}
+                role={m.role}
+                content={m.content}
+                time={m.time}
+              />
+            ))}
+
+            {loading && <TypingIndicator />}
+            <div ref={bottomRef} />
+          </div>
+
+          <div className="p-4 border-t dark:border-gray-700">
+            <InputBox
+              value={input}
+              onChange={setInput}
+              onSend={handleSend}
+              disabled={loading}
+            />
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
   );
 };
 

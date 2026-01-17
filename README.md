@@ -21,7 +21,7 @@ It supports **multi-conversation chats, JWT-based authentication, and AI integra
 - AI-generated responses via Gemini API
 
 ### 🧭 Chat Management
-- Create new chats automatically
+- Create new chats
 - Rename chats (double-click to edit)
 - Delete chats
 - Sidebar with chat history
